@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="colorAccent">#FF4081</color>
+    <color name="darkGrean">#008000</color>
+    <color name="lightGrean">#7CFC00</color>
+
+    <array name="dot_active">
+        <item>@color/lightGrean</item>
+        <item>@color/lightGrean</item>
+
+    </array>
+
+    <array name="dot_inactive">
+        <item>@color/darkGrean</item>
+        <item>@color/darkGrean</item>
+
+    </array>
+
+
+</resources>
