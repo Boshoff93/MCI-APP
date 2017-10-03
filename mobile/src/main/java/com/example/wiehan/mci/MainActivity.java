@@ -281,7 +281,7 @@ public class MainActivity extends AppCompatActivity {
 
                     orangeAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_orange);
 
-                    orangeAlert.setMessage("Notification Orange (" + timer.getText() + ")");
+                    orangeAlert.setMessage("Notification Orange\n(" + timer.getText() + ")");
                     orangeAlert.show();
                     TextView textView = (TextView) orangeAlert.findViewById(android.R.id.message);
                     textView.setTextSize(20);

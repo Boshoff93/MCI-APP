@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black">
+
+    <Chronometer
+        android:id="@+id/timer"
+        android:layout_width="200dp"
+        android:layout_height="50dp"
+        android:format="00:00:00"
+        android:textAlignment="center"
+        android:textSize="40sp"
+        android:textColor="@color/white"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="78dp" />
+
+    <Button
+        android:id="@+id/orange"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:text="Orange"
+        android:textSize="7sp"
+        android:layout_alignBottom="@+id/red"
+        android:layout_toEndOf="@+id/red"
+        android:layout_alignTop="@+id/red" />
+
+    <Button
+        android:id="@+id/red"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="23dp"
+        android:layout_marginTop="18dp"
+        android:text="RED"
+        android:textSize="7sp"
+        android:layout_below="@+id/timer"
+        android:layout_alignStart="@+id/timer" />
+
+    <Button
+        android:id="@+id/yellow"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_toEndOf="@+id/orange"
+        android:text="YELLOW"
+        android:textSize="7sp"
+        android:layout_alignTop="@+id/red" />
+
+</RelativeLayout>
