@@ -18,10 +18,13 @@ import android.os.Vibrator;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.wearable.activity.WearableActivity;
+import android.support.wearable.internal.view.SwipeDismissLayout;
 import android.support.wearable.view.BoxInsetLayout;
 import android.text.Html;
+import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -49,7 +52,6 @@ public class MainActivity extends WearableActivity {
     private BoxInsetLayout mContainerView;
     private TextView mTextView;
     private TextView mClockView;
-
     private ViewPagerAdapter viewPagerAdapter;
     private ViewPager viewPager;
     private TextView[] dots;
@@ -60,12 +62,13 @@ public class MainActivity extends WearableActivity {
     private ListView list;
     Chronometer timer;
     int timerSet = 0;
-    String[] colors = new String[]{"#D3D3D3", "#FFFFFF"};
+    ;
+    ArrayList<String> colors = new ArrayList<String>();
     private AlertDialog redAlert;
     private AlertDialog yellowAlert;
     private AlertDialog orangeAlert;
     private AlertDialog describeAlert;
-
+    private AlertDialog missionAlert;
     private SensorManager mSensorManager;
     private float mAccel; // acceleration, apart from gravity
     private float mAccelCurrent; // current acceleration + gravity
@@ -74,9 +77,13 @@ public class MainActivity extends WearableActivity {
     private int alertFlagYellow = 0;
     private int alertFlagOrange = 0;
     private int alertDescribeFlag = 0;
+    private int alertMissionFlag = 0;
     long[] vibrateRed = {0, 500, 200, 500, 200, 500};
     long[] vibrateOrange = {0, 350, 150, 350};
     long[] vibrateYellow = {0, 200};
+    int notificationColor = 0;
+    int progressPoints = 100;
+    GestureDetector gdt;
 
 
     @Override
@@ -114,18 +121,72 @@ public class MainActivity extends WearableActivity {
         mAccelCurrent = SensorManager.GRAVITY_EARTH;
         mAccelLast = SensorManager.GRAVITY_EARTH;
 
+        createMissionOverviewAlert();
+        gdt = new GestureDetector(new GestureDetector.OnGestureListener() {
+            @Override
+            public boolean onDown(MotionEvent e) {
+
+                return true;
+            }
+
+            @Override
+            public void onShowPress(MotionEvent e) {
+
+            }
+
+            @Override
+            public boolean onSingleTapUp(MotionEvent e) {
+                return false;
+            }
+
+            @Override
+            public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+                return false;
+            }
+
+            @Override
+            public void onLongPress(MotionEvent e) {
+            }
+
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                final int SWIPE_MIN_DISTANCE = 12;
+                final int SWIPE_THRESHOLD_VELOCITY = 20;
+                if (e2.getY() - e1.getY() > SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
+                    alertMissionFlag = 1;
+                    missionAlert.show();
+                    TextView textView = (TextView) missionAlert.findViewById(android.R.id.message);
+                    textView.setTextSize(16);
+                    textView.setTextColor(Color.parseColor("#000000"));
+                    textView.setHeight(300);
+                    textView.setWidth(300);
+                    textView.setBackgroundResource(R.drawable.textview_white);
+
+                }
+
+                return false;
+            }
+        });
+
+
         arrayList = new ArrayList<String>();
         adapter = new ArrayAdapter<String>(getApplicationContext(),
                 android.R.layout.simple_list_item_1, arrayList) {
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
-                View view = super.getView(position, convertView, parent);
-                TextView text = (TextView) view.findViewById(android.R.id.text1);
-                int color = position % colors.length;
-                view.setBackgroundColor(Color.parseColor(colors[color]));
-                text.setTextColor(Color.parseColor("#000000"));
+                View row = super.getView(position, convertView, parent);
+                TextView text = (TextView) row.findViewById(android.R.id.text1);
+
+                for (int i = 0; i < arrayList.size(); i++) {
+                    if (position == i) {
+                        row.setBackgroundColor(Color.parseColor(colors.get(i)));
+                    }
+                }
+
                 text.setTextSize(10);
-                return view;
+                text.setTextColor(Color.parseColor("#000000"));
+                return row;
+
             }
         };
 
@@ -162,10 +223,28 @@ public class MainActivity extends WearableActivity {
         @Override
         public void onPageSelected(int position) {
             addBottomDots(position);
+            View v ;
+            if (position == 0) {
+                v = findViewById(R.id.backGround0);
+            } else if (position == 1) {
+                v = findViewById(R.id.backGround1);
+            } else {
+                v = findViewById(R.id.backGround2) ;
+            }
+                v.setOnTouchListener(new View.OnTouchListener() {
+                    @Override
+                    public boolean onTouch(View v, MotionEvent event) {
+                        gdt.onTouchEvent(event);
+                        return true;
+                    }
+                });
+
             if (position == 0) {
                 ProgressBar prg = (ProgressBar) findViewById(R.id.progressBar);
+                TextView pointPercentage = (TextView) findViewById(R.id.pointPercentage);
+                pointPercentage.setText(progressPoints + "%");
                 prg.setMax(100);
-                prg.setProgress(70);
+                prg.setProgress(progressPoints);
                 Drawable draw = getResources().getDrawable(R.drawable.progress_custom);
                 prg.setProgressDrawable(draw);
             } else if (position == 2) {
@@ -176,9 +255,9 @@ public class MainActivity extends WearableActivity {
 
                     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                         String selectedFromList = (list.getItemAtPosition(position)).toString();
-                        if(selectedFromList.charAt(0) == 'H') {
+                        if (selectedFromList.charAt(0) == 'H') {
                             createAlertDescription(3);
-                        } else if ( selectedFromList.charAt(0) == 'M') {
+                        } else if (selectedFromList.charAt(0) == 'M') {
                             createAlertDescription(2);
                         } else {
                             createAlertDescription(1);
@@ -215,6 +294,11 @@ public class MainActivity extends WearableActivity {
             mAccel = mAccel * 0.9f + delta; // perform low-cut filter
 
             if (mAccel > 12) {
+                if (alertMissionFlag == 1) {
+                    missionAlert.dismiss();
+                    alertMissionFlag = 0;
+                    return;
+                }
 
                 if (alertFlagRed == 1) {
                     alertFlagRed = 0;
@@ -293,6 +377,27 @@ public class MainActivity extends WearableActivity {
 
     }
 
+    public void createMissionOverviewAlert() {
+        final AlertDialog.Builder alertMission = new AlertDialog.Builder(MainActivity.this);
+        alertMission.setPositiveButton(
+                "OK",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+
+                    }
+                });
+
+
+        missionAlert = alertMission.create();
+        WindowManager.LayoutParams placement = missionAlert.getWindow().getAttributes();
+        placement.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+        placement.y = 150;   //y position
+
+        missionAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_white);
+        missionAlert.setMessage("Overview of Mission:\nTasks:");
+
+    }
+
     private class ViewPagerAdapter extends PagerAdapter {
 
         private LayoutInflater layoutInflater;
@@ -327,12 +432,12 @@ public class MainActivity extends WearableActivity {
             Button orange = (Button) findViewById(R.id.orange);
             Button yellow = (Button) findViewById(R.id.yellow);
 
-
             red.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
 
-
+                    colors.add("#ff0000");
+                    progressPoints -= 7;
                     arrayList.add("High Priority Alert\n(" + timer.getText() + ")");
                     adapter.notifyDataSetChanged();
 
@@ -344,7 +449,7 @@ public class MainActivity extends WearableActivity {
                             "OK",
                             new DialogInterface.OnClickListener() {
                                 public void onClick(DialogInterface dialog, int id) {
-                                    alertFlagRed = 0 ;
+                                    alertFlagRed = 0;
                                 }
                             });
 
@@ -374,6 +479,8 @@ public class MainActivity extends WearableActivity {
                 @Override
                 public void onClick(View v) {
 
+                    colors.add("#FFFF00");
+                    progressPoints -= 3;
                     arrayList.add("Low Priority Alert\n(" + timer.getText() + ")");
                     adapter.notifyDataSetChanged();
 
@@ -415,6 +522,8 @@ public class MainActivity extends WearableActivity {
             orange.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+                    colors.add("#FF8C00"); // value used by getView in arrayAdapter
+                    progressPoints -= 5;
                     arrayList.add("Medium Priority Alert\n(" + timer.getText() + ")");
                     adapter.notifyDataSetChanged();
 
