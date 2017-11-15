@@ -33,6 +33,7 @@
         android:layout_gravity="bottom"
         android:gravity="center"
         android:orientation="horizontal"
+        android:keepScreenOn="true"
 
         />
 

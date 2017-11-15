@@ -12,38 +12,35 @@
         android:textAlignment="center"
         android:textSize="40sp"
         android:textColor="@color/white"
+        android:layout_marginTop="17dp"
         android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="78dp" />
+        android:layout_alignParentStart="true" />
 
     <Button
         android:id="@+id/orange"
-        android:layout_width="50dp"
+        android:layout_width="55dp"
         android:layout_height="50dp"
-        android:text="Orange"
+        android:text="MEDIUM"
         android:textSize="7sp"
-        android:layout_alignBottom="@+id/red"
-        android:layout_toEndOf="@+id/red"
-        android:layout_alignTop="@+id/red" />
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true" />
 
     <Button
         android:id="@+id/red"
-        android:layout_width="50dp"
+        android:layout_width="55dp"
         android:layout_height="50dp"
-        android:layout_marginStart="23dp"
-        android:layout_marginTop="18dp"
-        android:text="RED"
+        android:text="HIGH"
         android:textSize="7sp"
-        android:layout_below="@+id/timer"
-        android:layout_alignStart="@+id/timer" />
+        android:layout_centerVertical="true"
+        android:layout_toStartOf="@+id/orange" />
 
     <Button
         android:id="@+id/yellow"
-        android:layout_width="50dp"
+        android:layout_width="55dp"
         android:layout_height="50dp"
-        android:layout_toEndOf="@+id/orange"
-        android:text="YELLOW"
+        android:text="LOW"
         android:textSize="7sp"
-        android:layout_alignTop="@+id/red" />
+        android:layout_centerVertical="true"
+        android:layout_toEndOf="@+id/orange" />
 
 </RelativeLayout>
