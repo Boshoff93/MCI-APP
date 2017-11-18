@@ -461,7 +461,7 @@ public class MainActivity extends WearableActivity {
 
                     redAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_red);
 
-                    redAlert.setMessage("High Priority Alert Availible\n(" + timer.getText() + ")");
+                    redAlert.setMessage("High Priority Alert Available\n(" + timer.getText() + ")");
                     alertFlagRed = 1; // Alert is shown, set flag so that onSensorChange event knows to remove alert
                     redAlert.show();
                     TextView textView = (TextView) redAlert.findViewById(android.R.id.message);
@@ -505,7 +505,7 @@ public class MainActivity extends WearableActivity {
 
                     yellowAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_yellow);
 
-                    yellowAlert.setMessage("Low Priority Alert Availible\n(" + timer.getText() + ")");
+                    yellowAlert.setMessage("Low Priority Alert Available\n(" + timer.getText() + ")");
                     alertFlagYellow = 1; // Alert is shown, set flag so that onSensorChange event knows to remove alert
                     yellowAlert.show();
                     TextView textView = (TextView) yellowAlert.findViewById(android.R.id.message);
@@ -547,7 +547,7 @@ public class MainActivity extends WearableActivity {
 
                     orangeAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_orange);
 
-                    orangeAlert.setMessage("Medium Priority Alert Availible\n(" + timer.getText() + ")");
+                    orangeAlert.setMessage("Medium Priority Alert Available\n(" + timer.getText() + ")");
                     alertFlagOrange = 1; // Alert is shown, set flag so that onSensorChange event knows to remove alert
                     orangeAlert.show();
                     TextView textView = (TextView) orangeAlert.findViewById(android.R.id.message);
