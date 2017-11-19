@@ -20,7 +20,10 @@ android {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile 'org.fusesource.mqtt-client:mqtt-client:1.12'
     compile 'com.google.android.support:wearable:2.0.2'
     compile 'com.google.android.gms:play-services-wearable:10.2.6'
     provided 'com.google.android.wearable:wearable:1.0.0'
+
+
 }

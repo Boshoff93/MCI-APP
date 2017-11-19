@@ -13,6 +13,7 @@ import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Process;
 import android.os.SystemClock;
 import android.os.Vibrator;
 import android.support.v4.view.PagerAdapter;
@@ -39,10 +40,23 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.fusesource.hawtbuf.Buffer;
+import org.fusesource.hawtbuf.UTF8Buffer;
+import org.fusesource.mqtt.client.Callback;
+import org.fusesource.mqtt.client.CallbackConnection;
+import org.fusesource.mqtt.client.Listener;
+import org.fusesource.mqtt.client.MQTT;
+import org.fusesource.mqtt.client.QoS;
+import org.fusesource.mqtt.client.Topic;
+
+import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.Locale;
+import java.util.Random;
 
 public class MainActivity extends WearableActivity {
 
@@ -78,13 +92,28 @@ public class MainActivity extends WearableActivity {
     private int alertFlagOrange = 0;
     private int alertDescribeFlag = 0;
     private int alertMissionFlag = 0;
-    long[] vibrateRed = {0, 500, 200, 500, 200, 500};
-    long[] vibrateOrange = {0, 350, 150, 350};
-    long[] vibrateYellow = {0, 200};
-    int notificationColor = 0;
-    int progressPoints = 100;
-    GestureDetector gdt;
+    private long[] vibrateRed = {0, 500, 200, 500, 200, 500};
+    private long[] vibrateOrange = {0, 350, 150, 350};
+    private long[] vibrateYellow = {0, 200};
+    private int progressPoints = 100;
+    private GestureDetector gdt;
+    private String alertDescription ;
+    private ArrayList<String> alertDescriptionBank = new ArrayList<String>();
 
+
+    int counttemp = 0;
+
+    //************************************************ Activemq Setting **************************************************
+
+    CallbackConnection connection;
+    Buffer getpayload ;
+    LinkedList<Buffer> payloadQueue = new LinkedList<Buffer>(); // Change to Buffer LinkedList Once android wear 2.0 availible
+    int newPayloadAvailable = 0 ;
+
+
+    int randomMessage = 0; // will delete this once android wear 2.0 availible
+
+    //************************************************ Activemq Setting **************************************************
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -121,7 +150,254 @@ public class MainActivity extends WearableActivity {
         mAccelCurrent = SensorManager.GRAVITY_EARTH;
         mAccelLast = SensorManager.GRAVITY_EARTH;
 
-        createMissionOverviewAlert();
+        createMissionOverviewAlert("Mission:");
+
+        //************************************************ Activemq Setting ************************************************
+
+       /* MQTT mqtt = new MQTT();
+        try {
+            mqtt.setHost("tcp://192.168.0.11:1883");
+            connection = mqtt.callbackConnection();
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+
+            Context context = getApplicationContext();
+            CharSequence text = "Failed to set Host";
+            int duration = Toast.LENGTH_LONG;
+            Toast toast = Toast.makeText(context, text, duration);
+            toast.show();
+
+        }
+
+        mqtt.setClientId("WADClient");
+        connection.listener(new Listener() {
+
+            public void onDisconnected() {
+            }
+
+            public void onConnected() {
+            }
+
+            public void onPublish(UTF8Buffer topic, Buffer payload, Runnable ack) {
+                // You can now process a received message from a topic.
+                // Once process execute the ack runnable.
+                getpayload = payload ;
+                ack.run();
+                newPayloadAvailable = 1 ;
+            }
+
+            public void onFailure(Throwable value) {
+
+            }
+        });
+
+
+        connection.connect(new Callback<Void>() {
+            public void onFailure(Throwable value) {
+                Toast.makeText(getApplicationContext(),"Connection failed", Toast.LENGTH_SHORT).show();
+            }
+            // On connection subscribe
+            public void onSuccess(Void v) {
+                // Subscribe to topic
+                Topic[] topics = {new Topic("foo", QoS.AT_LEAST_ONCE)};
+                connection.subscribe(topics, new Callback<byte[]>() {
+                    public void onSuccess(byte[] qoses) {
+
+                    }
+
+                    public void onFailure(Throwable value) {
+
+                    }
+                });
+
+            }
+        });
+
+
+        final Handler getPayload = new Handler();
+        new Thread()
+        {
+            public void run()
+            {
+                Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
+                MainActivity.this.runOnUiThread(new Runnable()
+                {
+                    public void run() {
+
+                        if(newPayloadAvailable == 1 ){
+                            if(getpayload != null) {
+                                payloadQueue.add(getpayload);
+                                newPayloadAvailable = 0;
+                            }
+                        }
+                        getPayload.postDelayed(this, 250);
+                    }
+
+                });
+            }
+
+        }.start();
+        */
+
+        final Handler dequeing = new Handler();
+
+        new Thread()
+        {
+            public void run()
+            {
+                Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
+                MainActivity.this.runOnUiThread(new Runnable()
+                {
+                    public void run() {
+
+                        try {
+                            if (!payloadQueue.isEmpty()) {
+                                Context context = getApplicationContext();
+                                String payloadContent = payloadQueue.removeFirst().toString();
+                                payloadContent = payloadContent.substring(7,payloadContent.length());
+
+                                if(payloadContent.startsWith("(H)")) {
+
+                                    colors.add("#ff0000");
+                                    progressPoints -= 7;
+                                    arrayList.add("High Priority Alert\n(" + timer.getText() + ")");
+                                    adapter.notifyDataSetChanged();
+
+                                    Vibrator redVib = (Vibrator) getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE);
+                                    redVib.vibrate(vibrateRed, -1);
+
+                                    final AlertDialog.Builder redAppAlert = new AlertDialog.Builder(MainActivity.this);
+                                    redAppAlert.setPositiveButton(
+                                            "OK",
+                                            new DialogInterface.OnClickListener() {
+                                                public void onClick(DialogInterface dialog, int id) {
+                                                    alertFlagRed = 0;
+                                                }
+                                            });
+
+
+                                    redAlert = redAppAlert.create();
+                                    WindowManager.LayoutParams placement = redAlert.getWindow().getAttributes();
+                                    placement.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+
+                                    redAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_red);
+
+                                    redAlert.setMessage("High Priority Alert Available\n(" + timer.getText() + ")");
+                                    alertFlagRed = 1; // Alert is shown, set flag so that onSensorChange event knows to remove alert
+                                    redAlert.show();
+                                    TextView textView = (TextView) redAlert.findViewById(android.R.id.message);
+                                    textView.setTextSize(20);
+                                    textView.setGravity(Gravity.CENTER_HORIZONTAL);
+                                    textView.setHeight(300);
+                                    textView.setWidth(300);
+                                    textView.setBackgroundResource(R.drawable.textview_red);
+
+                                    alertDescription = payloadContent.substring(3, payloadContent.length());
+                                    alertDescriptionBank.add(alertDescription);
+
+                                } else if (payloadContent.startsWith("(M)")){
+                                    colors.add("#FF8C00"); // value used by getView in arrayAdapter
+                                    progressPoints -= 5;
+                                    arrayList.add("Medium Priority Alert\n(" + timer.getText() + ")");
+                                    adapter.notifyDataSetChanged();
+
+                                    Vibrator orangeVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                                    orangeVib.vibrate(vibrateOrange, -1);
+
+                                    final AlertDialog.Builder orangeAppAlert = new AlertDialog.Builder(MainActivity.this);
+                                    orangeAppAlert.setPositiveButton(
+                                            "OK",
+                                            new DialogInterface.OnClickListener() {
+                                                public void onClick(DialogInterface dialog, int id) {
+                                                    alertFlagOrange = 0;
+                                                }
+                                            });
+
+
+                                    orangeAlert = orangeAppAlert.create();
+                                    WindowManager.LayoutParams placement = orangeAlert.getWindow().getAttributes();
+                                    placement.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+
+                                    orangeAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_orange);
+
+                                    orangeAlert.setMessage("Medium Priority Alert Available\n(" + timer.getText() + ")");
+                                    alertFlagOrange = 1; // Alert is shown, set flag so that onSensorChange event knows to remove alert
+                                    orangeAlert.show();
+                                    TextView textView = (TextView) orangeAlert.findViewById(android.R.id.message);
+                                    textView.setTextSize(20);
+                                    textView.setGravity(Gravity.CENTER_HORIZONTAL);
+                                    textView.setHeight(300);
+                                    textView.setWidth(300);
+                                    textView.setBackgroundResource(R.drawable.textview_orange);
+                                    alertDescription = payloadContent.substring(3, payloadContent.length());
+                                    alertDescriptionBank.add(alertDescription);
+
+                                } else if (payloadContent.startsWith("(L)")){
+                                    colors.add("#FFFF00");
+                                    progressPoints -= 3;
+                                    arrayList.add("Low Priority Alert\n(" + timer.getText() + ")");
+                                    adapter.notifyDataSetChanged();
+
+                                    Vibrator yellowVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                                    yellowVib.vibrate(vibrateYellow, -1);
+
+
+                                    final AlertDialog.Builder yellowAppAlert = new AlertDialog.Builder(MainActivity.this);
+                                    yellowAppAlert.setPositiveButton(
+                                            "OK",
+                                            new DialogInterface.OnClickListener() {
+                                                public void onClick(DialogInterface dialog, int id) {
+                                                    alertFlagYellow = 0;
+                                                }
+                                            });
+
+
+                                    yellowAlert = yellowAppAlert.create();
+                                    WindowManager.LayoutParams placement = yellowAlert.getWindow().getAttributes();
+                                    placement.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+
+                                    yellowAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_yellow);
+
+                                    yellowAlert.setMessage("Low Priority Alert Available\n(" + timer.getText() + ")");
+                                    alertFlagYellow = 1; // Alert is shown, set flag so that onSensorChange event knows to remove alert
+                                    yellowAlert.show();
+                                    TextView textView = (TextView) yellowAlert.findViewById(android.R.id.message);
+                                    textView.setTextSize(20);
+                                    textView.setGravity(Gravity.CENTER_HORIZONTAL);
+                                    textView.setHeight(300);
+                                    textView.setWidth(300);
+                                    textView.setBackgroundResource(R.drawable.textview_yellow);
+                                    alertDescription = payloadContent.substring(3, payloadContent.length());
+                                    alertDescriptionBank.add(alertDescription);
+
+                                } else if (payloadContent.startsWith("(UM)")) {
+                                    createMissionOverviewAlert(payloadContent.substring(4, payloadContent.length()));
+                                }
+                            }
+                        } catch (Exception e) {
+
+                            Context context = getApplicationContext();
+                            CharSequence text = "Failed to Deque";
+                            int duration = Toast.LENGTH_SHORT;
+                            Toast toast = Toast.makeText(context, text, duration);
+                            toast.show();
+
+                        }
+                        dequeing.postDelayed(this, 1000);
+
+
+                    }
+
+                });
+            }
+
+        }.start();
+
+
+
+        //************************************************ Activemq Setting ************************************************
+
+
         gdt = new GestureDetector(new GestureDetector.OnGestureListener() {
             @Override
             public boolean onDown(MotionEvent e) {
@@ -156,7 +432,7 @@ public class MainActivity extends WearableActivity {
                     alertMissionFlag = 1;
                     missionAlert.show();
                     TextView textView = (TextView) missionAlert.findViewById(android.R.id.message);
-                    textView.setTextSize(16);
+                    textView.setTextSize(20);
                     textView.setTextColor(Color.parseColor("#000000"));
                     textView.setHeight(300);
                     textView.setWidth(300);
@@ -183,7 +459,8 @@ public class MainActivity extends WearableActivity {
                     }
                 }
 
-                text.setTextSize(10);
+                text.setTextSize(12);
+                text.setGravity(Gravity.CENTER_HORIZONTAL);
                 text.setTextColor(Color.parseColor("#000000"));
                 return row;
 
@@ -213,11 +490,15 @@ public class MainActivity extends WearableActivity {
 
     }
 
-    ViewPager.OnPageChangeListener viewListener = new ViewPager.OnPageChangeListener() {
+    private ViewPager.OnPageChangeListener viewListener = new ViewPager.OnPageChangeListener() {
 
+        Boolean openedFirstTime = true;
         @Override
         public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-
+            if (openedFirstTime && positionOffset == 0 && positionOffsetPixels == 0){
+                onPageSelected(1);
+                openedFirstTime = false;
+            }
         }
 
         @Override
@@ -252,16 +533,9 @@ public class MainActivity extends WearableActivity {
                 list.setClickable(true);
                 list.setAdapter(adapter);
                 list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-
                     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                        String selectedFromList = (list.getItemAtPosition(position)).toString();
-                        if (selectedFromList.charAt(0) == 'H') {
-                            createAlertDescription(3);
-                        } else if (selectedFromList.charAt(0) == 'M') {
-                            createAlertDescription(2);
-                        } else {
-                            createAlertDescription(1);
-                        }
+                        alertDescription = alertDescriptionBank.get(position);                           //Display alert in alert array.
+                        createAlertDescription();                                                        //Depends on which cell the user clicks on in notification list
                     }
                 });
             }
@@ -303,21 +577,21 @@ public class MainActivity extends WearableActivity {
                 if (alertFlagRed == 1) {
                     alertFlagRed = 0;
                     redAlert.dismiss();
-                    createAlertDescription(3);
+                    createAlertDescription();
                     return;
                 }
 
                 if (alertFlagOrange == 1) {
                     alertFlagOrange = 0;
                     orangeAlert.dismiss();
-                    createAlertDescription(2);
+                    createAlertDescription();
                     return;
                 }
 
                 if (alertFlagYellow == 1) {
                     alertFlagYellow = 0;
                     yellowAlert.dismiss();
-                    createAlertDescription(1);
+                    createAlertDescription();
                     return;
                 }
 
@@ -333,7 +607,7 @@ public class MainActivity extends WearableActivity {
         }
     };
 
-    public void createAlertDescription(int alertLevel) {
+    public void createAlertDescription() {
         final AlertDialog.Builder alertDescripe = new AlertDialog.Builder(MainActivity.this);
         alertDescripe.setPositiveButton(
                 "OK",
@@ -347,17 +621,10 @@ public class MainActivity extends WearableActivity {
         describeAlert = alertDescripe.create();
         WindowManager.LayoutParams placement = describeAlert.getWindow().getAttributes();
         placement.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-        placement.y = 150;   //y position
 
         describeAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_white);
+        describeAlert.setMessage(alertDescription);
 
-        if (alertLevel == 3) {
-            describeAlert.setMessage("Pilot failed to communicate with air traffic control.");
-        } else if (alertLevel == 2) {
-            describeAlert.setMessage("Check fuel state.");
-        } else {
-            describeAlert.setMessage("MIRC chat.");
-        }
 
         final Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
@@ -365,7 +632,7 @@ public class MainActivity extends WearableActivity {
             public void run() {
                 describeAlert.show();
                 TextView textView = (TextView) describeAlert.findViewById(android.R.id.message);
-                textView.setTextSize(16);
+                textView.setTextSize(20);
                 textView.setTextColor(Color.parseColor("#000000"));
                 textView.setHeight(300);
                 textView.setWidth(300);
@@ -375,9 +642,11 @@ public class MainActivity extends WearableActivity {
             }
         }, 200); //Need to delay as the same threshold is used to display two different types of alert messages
 
+
     }
 
-    public void createMissionOverviewAlert() {
+
+    public void createMissionOverviewAlert(String updatMessage) {
         final AlertDialog.Builder alertMission = new AlertDialog.Builder(MainActivity.this);
         alertMission.setPositiveButton(
                 "OK",
@@ -391,10 +660,10 @@ public class MainActivity extends WearableActivity {
         missionAlert = alertMission.create();
         WindowManager.LayoutParams placement = missionAlert.getWindow().getAttributes();
         placement.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-        placement.y = 150;   //y position
+        placement.y = 100;   //y position
 
         missionAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_white);
-        missionAlert.setMessage("Overview of Mission:\nTasks:");
+        missionAlert.setMessage(updatMessage);
 
     }
 
@@ -428,136 +697,43 @@ public class MainActivity extends WearableActivity {
                 timerSet = 1;
             }
 
-            final Button red = (Button) findViewById(R.id.red);
-            Button orange = (Button) findViewById(R.id.orange);
-            Button yellow = (Button) findViewById(R.id.yellow);
-
-            red.setOnClickListener(new View.OnClickListener() {
+            //************************************************ Activemq Setting ************************************************
+            Button enqueButton = (Button) findViewById(R.id.enqueMessages);
+            enqueButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
 
-                    colors.add("#ff0000");
-                    progressPoints -= 7;
-                    arrayList.add("High Priority Alert\n(" + timer.getText() + ")");
-                    adapter.notifyDataSetChanged();
 
-                    Vibrator redVib = (Vibrator) getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE);
-                    redVib.vibrate(vibrateRed, -1);
+                    Random ran = new Random();
+                    randomMessage = ran.nextInt(4 - 0 + 1) + 0;
+                    //Toast.makeText(getApplicationContext(),"Clicked:" + randomMessage,Toast.LENGTH_SHORT).show();
+                    if(randomMessage == 0) {
+                        byte[] sb = ("(H)Pilot failed to communicate with air traffic control: "+ counttemp).getBytes();
+                        counttemp++;
+                        payloadQueue.addLast(new Buffer(sb));
+                    } else if (randomMessage == 1){
+                        byte[] sb = ("(M)Check fuel state: "+ counttemp).getBytes();
+                        counttemp++;
+                        payloadQueue.addLast(new Buffer(sb));
+                    } else if (randomMessage == 2) {
+                        byte[] sb = ("(L)MIRC Chat: "+ counttemp).getBytes();
+                        counttemp++;
+                        payloadQueue.addLast(new Buffer(sb));
+                    } else if (randomMessage == 3) {
+                        byte[] sb = ("(UM)Mission: The mission is now mission no." + counttemp).getBytes();
+                        counttemp++;
+                        payloadQueue.addLast(new Buffer(sb));
+                    }else {
 
-                    final AlertDialog.Builder redAppAlert = new AlertDialog.Builder(MainActivity.this);
-                    redAppAlert.setPositiveButton(
-                            "OK",
-                            new DialogInterface.OnClickListener() {
-                                public void onClick(DialogInterface dialog, int id) {
-                                    alertFlagRed = 0;
-                                }
-                            });
-
-
-                    redAlert = redAppAlert.create();
-                    WindowManager.LayoutParams placement = redAlert.getWindow().getAttributes();
-                    placement.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-                    placement.y = 150;   //y position
-
-                    redAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_red);
-
-                    redAlert.setMessage("High Priority Alert Available\n(" + timer.getText() + ")");
-                    alertFlagRed = 1; // Alert is shown, set flag so that onSensorChange event knows to remove alert
-                    redAlert.show();
-                    TextView textView = (TextView) redAlert.findViewById(android.R.id.message);
-                    textView.setTextSize(16);
-                    textView.setGravity(Gravity.CENTER);
-                    textView.setHeight(300);
-                    textView.setWidth(300);
-                    textView.setBackgroundResource(R.drawable.textview_red);
+                    }
 
 
                 }
             });
 
-            yellow.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-
-                    colors.add("#FFFF00");
-                    progressPoints -= 3;
-                    arrayList.add("Low Priority Alert\n(" + timer.getText() + ")");
-                    adapter.notifyDataSetChanged();
-
-                    Vibrator yellowVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-                    yellowVib.vibrate(vibrateYellow, -1);
 
 
-                    final AlertDialog.Builder yellowAppAlert = new AlertDialog.Builder(MainActivity.this);
-                    yellowAppAlert.setPositiveButton(
-                            "OK",
-                            new DialogInterface.OnClickListener() {
-                                public void onClick(DialogInterface dialog, int id) {
-                                    alertFlagYellow = 0;
-                                }
-                            });
-
-
-                    yellowAlert = yellowAppAlert.create();
-                    WindowManager.LayoutParams placement = yellowAlert.getWindow().getAttributes();
-                    placement.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-                    placement.y = 150;   //y position
-
-                    yellowAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_yellow);
-
-                    yellowAlert.setMessage("Low Priority Alert Available\n(" + timer.getText() + ")");
-                    alertFlagYellow = 1; // Alert is shown, set flag so that onSensorChange event knows to remove alert
-                    yellowAlert.show();
-                    TextView textView = (TextView) yellowAlert.findViewById(android.R.id.message);
-                    textView.setTextSize(16);
-                    textView.setGravity(Gravity.CENTER);
-                    textView.setHeight(300);
-                    textView.setWidth(300);
-                    textView.setBackgroundResource(R.drawable.textview_yellow);
-
-
-                }
-            });
-
-            orange.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    colors.add("#FF8C00"); // value used by getView in arrayAdapter
-                    progressPoints -= 5;
-                    arrayList.add("Medium Priority Alert\n(" + timer.getText() + ")");
-                    adapter.notifyDataSetChanged();
-
-                    Vibrator orangeVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-                    orangeVib.vibrate(vibrateOrange, -1);
-
-                    final AlertDialog.Builder orangeAppAlert = new AlertDialog.Builder(MainActivity.this);
-                    orangeAppAlert.setPositiveButton(
-                            "OK",
-                            new DialogInterface.OnClickListener() {
-                                public void onClick(DialogInterface dialog, int id) {
-                                    alertFlagOrange = 0;
-                                }
-                            });
-
-
-                    orangeAlert = orangeAppAlert.create();
-                    WindowManager.LayoutParams placement = orangeAlert.getWindow().getAttributes();
-                    placement.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-                    placement.y = 150;   //y position
-
-                    orangeAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_orange);
-
-                    orangeAlert.setMessage("Medium Priority Alert Available\n(" + timer.getText() + ")");
-                    alertFlagOrange = 1; // Alert is shown, set flag so that onSensorChange event knows to remove alert
-                    orangeAlert.show();
-                    TextView textView = (TextView) orangeAlert.findViewById(android.R.id.message);
-                    textView.setTextSize(16);
-                    textView.setGravity(Gravity.CENTER);
-                    textView.setHeight(300);
-                    textView.setWidth(300);
-                    textView.setBackgroundResource(R.drawable.textview_orange);
-                }
-            });
+            //************************************************ Activemq Setting ************************************************
 
             return v;
         }
@@ -600,13 +776,10 @@ public class MainActivity extends WearableActivity {
     private void updateDisplay() {
         if (isAmbient()) {
             mContainerView.setBackgroundColor(getResources().getColor(android.R.color.black));
-            //mTextView.setTextColor(getResources().getColor(android.R.color.white));
             mClockView.setVisibility(View.VISIBLE);
-
             mClockView.setText(AMBIENT_DATE_FORMAT.format(new Date()));
         } else {
             mContainerView.setBackground(null);
-            //mTextView.setTextColor(getResources().getColor(android.R.color.black));
             mClockView.setVisibility(View.GONE);
         }
     }

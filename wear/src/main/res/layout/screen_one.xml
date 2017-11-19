@@ -19,30 +19,11 @@
         android:textSize="40sp" />
 
     <Button
-        android:id="@+id/orange"
-        android:layout_width="55dp"
-        android:layout_height="50dp"
-        android:layout_centerHorizontal="true"
+        android:id="@+id/enqueMessages"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Button"
         android:layout_centerVertical="true"
-        android:text="MEDIUM"
-        android:textSize="7sp" />
-
-    <Button
-        android:id="@+id/red"
-        android:layout_width="55dp"
-        android:layout_height="50dp"
-        android:layout_centerVertical="true"
-        android:layout_toStartOf="@+id/orange"
-        android:text="HIGH"
-        android:textSize="7sp" />
-
-    <Button
-        android:id="@+id/yellow"
-        android:layout_width="55dp"
-        android:layout_height="50dp"
-        android:layout_centerVertical="true"
-        android:layout_toEndOf="@+id/orange"
-        android:text="LOW"
-        android:textSize="7sp" />
+        android:layout_centerHorizontal="true" />
 
 </RelativeLayout>
