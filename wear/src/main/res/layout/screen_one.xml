@@ -10,19 +10,10 @@
         android:id="@+id/timer"
         android:layout_width="200dp"
         android:layout_height="50dp"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        android:layout_marginTop="17dp"
         android:format="00:00:00"
         android:textAlignment="center"
         android:textColor="@color/white"
-        android:textSize="40sp" />
-
-    <Button
-        android:id="@+id/enqueMessages"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Button"
+        android:textSize="40sp"
         android:layout_centerVertical="true"
         android:layout_centerHorizontal="true" />
 
